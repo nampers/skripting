@@ -1,0 +1,181 @@
+#Farming skript with custom enchants
+#made by Kyron/Gusb1n
+
+on load:
+    set {-tiny::*} to "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘqʀsᴛᴜᴠᴡxʏᴢ<>:• " split at ""
+    set {_lower} to "abcdefghijklmnopqrstuvwxyz<>:• "
+    set {-lower::*} to {_lower} split at ""
+    set {-upper::*} to (uppercase {_lower}) split at ""
+function tinytext(text: text) :: text:
+    loop {-tiny::*}:
+        replace {-lower::%loop-index%} and {-upper::%loop-index%} with loop-value in {_text}
+        # puts back color codes
+        replace "§%loop-value%" with "§%{-lower::%loop-index%}%" in {_text}
+    return {_text}
+
+function replaceAllText(t: text) :: text:
+	replace {-lower::*} and {-upper::*} with "" in {_t}
+	if {_t} is not "":
+		return {_t}
+    
+function loreLineCheck(t: string, i: item) :: number:
+	loop lore of {_i}:
+		add 1 to {_lore}
+		if loop-value contains {_t}:
+			return {_lore}
+			stop
+	return 0
+
+function openHoeUpgradesGUI(p: player, i: item):
+	set {_starMagnetlvl} to replaceAllText("%uncolored line loreLineCheck("&eStar Magnet", {_i}) of {_i}'s lore%")
+	set {_starMagnetlvl} to "0" if {_starMagnetlvl} is not set
+	set {_cropLucklvl} to replaceAllText("%uncolored line loreLineCheck("&aCrop Luck", {_i}) of {_i}'s lore%")
+	set {_cropLucklvl} to "0" if {_cropLucklvl} is not set
+	set {_circNukelvl} to replaceAllText("%uncolored line loreLineCheck("&dCircular Nuke", {_i}) of {_i}'s lore%")
+	set {_circNukelvl} to "0" if {_circNukelvl} is not set
+	set {_tntSummonslvl} to replaceAllText("%uncolored line loreLineCheck("&cExplosive Summons", {_i}) of {_i}'s lore%")
+	set {_tntSummonslvl} to "0" if {_tntSummonslvl} is not set
+	create a gui with virtual chest inventory with 3 rows named "ʜᴏᴇ ᴜᴘɢʀᴀᴅᴇs":
+		format gui slot (integers between 0 and 27) with gray stained glass pane named " "
+		format gui slot 4 with {_i}
+		format gui slot 10 with sunflower named "&x&E&F&F&A&3&5&lStar Magnet" with lore "&8ᴄᴜʀʀᴇɴᴛ ᴍᴀɢɴᴇᴛ sᴛʀᴇɴɢᴛʜ: &x&E&F&F&A&3&5%{_starMagnetlvl}%.0%%" and " " and "&x&E&F&F&A&3&5ᴅᴇsᴄʀɪᴘᴛɪᴏɴ" and "&8| &7Increases the quantity of%nl%&8| &7stars harvested from%nl%&8| &7crops." and " " and "&x&E&F&F&A&3&5ɪɴғᴏʀᴍᴀᴛɪᴏɴ" and "&8| &fʟᴇᴠᴇʟ: &a%{_starMagnetlvl}% &7/ &c1,000" and "&8| &fᴄᴏsᴛs: &e%(({_starMagnetlvl} parsed as a number) + 1) * 150% &x&E&F&F&A&3&5Stars" and " " and "&x&E&F&F&A&3&5&lCLICK TO UPGRADE": # Increase by 200-ish star cost
+			({_starMagnetlvl} parsed as a number) < 1000
+			if {stars::%{_p}'s uuid%} >= (({_starMagnetlvl} parsed as a number) + 1) * 150:
+				remove ((({_starMagnetlvl} parsed as a number) + 1) * 150) from {stars::%{_p}'s uuid%}
+				set tool of {_p} to addHoeEnchantment({_i}, "&eStar Magnet")
+				openHoeUpgradesGUI({_p}, {_p}'s tool)
+			else:
+				send "{@prefix} &cYou cannot afford to purchase that!" to {_p}
+		format gui slot 11 with enchanted book named "&x&4&C&F&F&0&0&lCrop Luck" with lore "&8ᴄᴜʀʀᴇɴᴛ ᴄʀᴏᴘ ʟᴜᴄᴋ: &x&4&C&F&F&0&0%({_cropLucklvl} parsed as a number) * 0.005%%%" and " " and "&x&4&C&F&F&0&0ᴅᴇsᴄʀɪᴘᴛɪᴏɴ" and "&8| &7Increases the chance of%nl%&8| &7upgrading the crops%nl%&8| &7around you." and " " and "&x&4&C&F&F&0&0ɪɴғᴏʀᴍᴀᴛɪᴏɴ" and "&8| &fʟᴇᴠᴇʟ: &a%{_cropLucklvl}% &7/ &c1,000" and "&8| &fᴄᴏsᴛs: &e%(({_cropLucklvl} parsed as a number) + 1) * 250% &x&E&F&F&A&3&5Stars" and " " and "&x&4&C&F&F&0&0&lCLICK TO UPGRADE": # Increase by 1k star cost
+			({_starMagnetlvl} parsed as a number) < 1000
+			if {stars::%{_p}'s uuid%} >= (({_starMagnetlvl} parsed as a number) + 1) * 250:
+				remove ((({_starMagnetlvl} parsed as a number) + 1) * 250) from {stars::%{_p}'s uuid%}
+				set tool of {_p} to addHoeEnchantment({_i}, "&aCrop Luck")
+				openHoeUpgradesGUI({_p}, {_p}'s tool)
+			else:
+				send "{@prefix} &cYou cannot afford to purchase that!" to {_p}
+		format gui slot 12 with firework star named "&x&F&D&2&B&9&3&lCircular Nuke" with lore "&8ᴄᴜʀʀᴇɴᴛ ɴᴜᴋᴇ sᴛʀᴇɴɢᴛʜ: &x&F&D&2&B&9&3%({_circNukelvl} parsed as a number) * 0.001%%%" and " " and "&x&E&F&F&A&3&5ᴅᴇsᴄʀɪᴘᴛɪᴏɴ" and "&8| &7Increases the chance of%nl%&8| &7destroying all crops in%nl%&8| &7a circular radius." and " " and "&x&E&F&F&A&3&5ɪɴғᴏʀᴍᴀᴛɪᴏɴ" and "&8| &fʟᴇᴠᴇʟ: &a%{_circNukelvl}% &7/ &c5,000" and "&8| &fᴄᴏsᴛs: &e%(({_circNukelvl} parsed as a number) + 1) * 500% &x&E&F&F&A&3&5Stars" and " " and "&x&E&F&F&A&3&5&lCLICK TO UPGRADE": # Increase by 200-ish star cost
+			({_circNukelvl} parsed as a number) < 5000
+			if {stars::%{_p}'s uuid%} >= (({_circNukelvl} parsed as a number) + 1) * 500:
+				remove ((({_circNukelvl} parsed as a number) + 1) * 500) from {stars::%{_p}'s uuid%}
+				set tool of {_p} to addHoeEnchantment({_i}, "&dCircular Nuke")
+				openHoeUpgradesGUI({_p}, {_p}'s tool)
+			else:
+				send "{@prefix} &cYou cannot afford to purchase that!" to {_p}
+		format gui slot 13 with tnt named "&x&F&C&4&0&0&0&lExplosive Summons" with lore "&8ᴄᴜʀʀᴇɴᴛ sᴜᴍᴍᴏɴ ᴄʜᴀɴᴄᴇ: &x&F&C&4&0&0&0%({_tntSummonslvl} parsed as a number) * 0.002%%%" and " " and "&x&F&C&4&0&0&0ᴅᴇsᴄʀɪᴘᴛɪᴏɴ" and "&8| &7Increases the chance of%nl%&8| &7spawning a primed tnt." and " " and "&x&F&C&4&0&0&0ɪɴғᴏʀᴍᴀᴛɪᴏɴ" and "&8| &fʟᴇᴠᴇʟ: &a%{_tntSummonslvl}% &7/ &c2,000" and "&8| &fᴄᴏsᴛs: &e%(({_tntSummonslvl} parsed as a number) + 1) * 500% &x&E&F&F&A&3&5Stars" and " " and "&x&F&C&4&0&0&0&lCLICK TO UPGRADE": # Increase by 1k star cost
+			({_tntSummonslvl} parsed as a number) < 2000
+			if {stars::%{_p}'s uuid%} >= (({_tntSummonslvl} parsed as a number) + 1) * 500:
+				remove ((({_tntSummonslvl} parsed as a number) + 1) * 500) from {stars::%{_p}'s uuid%}
+				set tool of {_p} to addHoeEnchantment({_i}, "&cExplosive Summons")
+				openHoeUpgradesGUI({_p}, {_p}'s tool)
+			else:
+				send "{@prefix} &cYou cannot afford to purchase that!" to {_p}
+		open gui to {_p}
+
+function addHoeEnchantment(i: item, e: text) :: item:
+	set {_lore::*} to lore of {_i}
+	if loreLineCheck({_e}, {_i}) is 0:
+		set {_enchLine} to loreLineCheck("&f&lENCHANTMENTS", {_i})
+		set {_newLore::*} to {_lore::*}
+		loop {_lore::*}:
+			if (loop-index parsed as a number) is greater than {_enchLine}:
+				set {_loop} to (loop-index parsed as a number)
+				set {_newLore::%{_loop} + 1%} to loop-value
+		set {_newLore::%{_enchLine} + 1%} to "&f• %{_e}%: 1"
+		set lore of {_i} to {_newLore::*}
+	else:
+		set {_level} to replaceAllText("%uncolored line loreLineCheck({_e}, {_i}) of {_i}'s lore%")
+		set line loreLineCheck({_e}, {_i}) of lore of {_i} to "&f• %{_e}%: %({_level} parsed as a number) + 1%"
+	return {_i}
+    
+on block break:
+	if event-block is wheat[age=7] or carrots[age=7] or potatoes[age=7]:
+		if minecraft tag "hoes" contains player's tool:
+			cancel drops
+			set {_drops::*} to drops of block using player's tool
+			remove wheat seeds from {_drops::*}
+			give {_drops::*} to player
+			cropLuckActivation(player's tool, event-location)
+			tntSummonsActivation(player's tool, event-location, player)
+			circularNukeActivation(player's tool, event-block's location, player)
+			set {_gainedStars} to getCropBaseValue(event-block) + starMagnetActivation(player's tool, getCropBaseValue(event-block))
+			add {_gainedStars} to {stars::%player's uuid%}
+			send actionbar "&e+%{_gainedStars}% &x&E&F&F&A&3&5Stars" to player
+			wait 5 seconds
+			set block at event-block to wheat[age=7]
+                
+function getCropBaseValue(t: block) :: number:
+	if {_t} = wheat:                      
+		return 10
+	else if {_t} = potatoes:
+		return 25
+	else if {_t} = carrots:
+		return 35
+                
+function starMagnetActivation(i: item, v: number) :: number:
+	set {_starMagnetlvl} to replaceAllText("%uncolored line loreLineCheck("&eStar Magnet", {_i}) of {_i}'s lore%")
+	return ({_v} / 100) * ({_starMagnetlvl} parsed as a number)
+        
+function cropLuckActivation(i: item, l: location):
+	set {_cropLucklvl} to replaceAllText("%uncolored line loreLineCheck("&aCrop Luck", {_i}) of {_i}'s lore%")
+	chance of (({_cropLucklvl} parsed as a number) * 0.005)%:
+		loop all blocks in radius 2 around {_l}:
+			if loop-block is wheat or potato:
+				add loop-block's location to {_list::*}
+		set {_b} to random element out of {_list::*}
+		if block at {_b} = wheat:
+			set block at {_b} to potatoes[age=7]
+			stop
+		else if block at {_b} = potato:
+			set block at {_b} to carrots[age=7]
+			stop
+                
+function circularNukeActivation(i: item, l: location, p: player):
+	set {_circNukelvl} to replaceAllText("%uncolored line loreLineCheck("&dCircular Nuke", {_i}) of {_i}'s lore%")
+	chance of (({_circNukelvl} parsed as a number) * 0.001)%:
+		loop all blocks in radius 5 around {_l}:
+			if loop-block is wheat or carrots or potatoes:
+				set {_drops::*} to drops of loop-block using {_i}
+				remove wheat seeds from {_drops::*}
+				give {_drops::*} to {_p}
+				add loop-block's location to {_list::*}
+				add (getCropBaseValue(loop-block) + starMagnetActivation({_i}, getCropBaseValue(loop-block))) to {_gained}
+				set block at loop-block to air
+		send "&x&0&0&9&8&F&F&l(!) &x&0&0&9&8&F&FYour &x&F&D&2&B&9&3&lCircular Nuke &x&0&0&9&8&F&Factivated and gave you &e%{_gained}% &x&E&F&F&A&3&5Stars&x&0&0&9&8&F&F!" to {_p}
+		add {_gained} to {stars::%{_p}'s uuid%}
+		wait 5 seconds
+		loop {_list::*}:
+			set block at loop-value to wheat[age=7]
+                
+function tntSummonsActivation(i: item, l: location, p: player):
+	set {_tntSummonslvl} to replaceAllText("%uncolored line loreLineCheck("&cExplosive Summons", {_i}) of {_i}'s lore%")
+	chance of (({_tntSummonslvl} parsed as a number) * 0.002)%:
+		summon primed tnt at {_l}
+		set metadata value "hasOwner" of last spawned primed tnt to "%{_p}%"
+                
+on explode:
+	if metadata value "hasOwner" of event-entity is set:
+		set {_loc} to location of event-entity
+		set {_p} to ((metadata value "hasOwner" of event-entity) parsed as a player)
+		clear exploded blocks
+		loop all blocks in radius 3 around event-location:
+			if loop-block is wheat or carrots or potatoes:
+				set {_drops::*} to drops of loop-block using {_p}'s tool
+				remove wheat seeds from {_drops::*}
+				give {_drops::*} to {_p}
+				add loop-block's location to {_list::*}
+				add (getCropBaseValue(loop-block) + starMagnetActivation({_p}'s tool, getCropBaseValue(loop-block))) to {_gained}
+				set block at loop-block to air
+		send "&x&0&0&9&8&F&F&l(!) &x&0&0&9&8&F&FYour &x&F&C&4&0&0&0&lExplosive Summons &x&0&0&9&8&F&Factivated and gave you &e%{_gained}% &x&E&F&F&A&3&5Stars&x&0&0&9&8&F&F!" to {_p}
+		add {_gained} to {stars::%{_p}'s uuid%}
+		wait 5 seconds
+		loop {_list::*}:
+			set block at loop-value to wheat[age=7]
+
+on right click:
+	if minecraft tag "hoes" contains player's tool:
+		openHoeUpgradesGUI(player, player's tool)
+        
+command /stars:
+	trigger:
+		send "&fYou currently have &e%{stars::%player's uuid%}% &x&E&F&F&A&3&5Stars" to player
