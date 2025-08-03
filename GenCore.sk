@@ -1,0 +1,259 @@
+#This is a working Gen skript with skript yaml
+#made by Kyron/Gusb1n
+
+on script load:
+    clear {sellItems::*}
+    clear {sellValues::*}
+    clear {genTypes::*}
+    clear {genParticleColor::*}
+    clear {genItemDisplay::*}
+
+    # sellItems and sellValues
+    add Dead Brain Coral Fan to {sellItems::*}
+    set {sellValues::Dead Brain Coral Fan} to 20
+
+    add coal to {sellItems::*}
+    set {sellValues::coal} to 35
+
+    add Black Candle to {sellItems::*}
+    set {sellValues::black candle} to 50
+
+    add iron nugget to {sellItems::*}
+    set {sellValues::iron nugget} to 70
+
+    add raw iron to {sellItems::*}
+    set {sellValues::raw iron} to 100
+
+    add gold nugget to {sellItems::*}
+    set {sellValues::gold nugget} to 150
+
+    add raw gold to {sellItems::*}
+    set {sellValues::raw gold} to 250
+
+    add emerald to {sellItems::*}
+    set {sellValues::emerald} to 320
+
+    add Green dye to {sellItems::*}
+    set {sellValues::Green dye} to 420
+
+    add red dye  to {sellItems::*}
+    set {sellValues::Red dye} to 500
+
+    add Red Tulip  to {sellItems::*}
+    set {sellValues::Red Tulip} to 650
+
+    add red Candle to {sellItems::*}
+    set {sellValues::red candle} to 720
+
+    add Netherite Scraps to {sellItems::*}
+    set {sellValues::Netherite Scraps} to 800
+
+    add Nether Bricks to {sellItems::*}
+    set {sellValues::Netherite Brick} to 1000
+
+    add orange candle to {sellItems::*}
+    set {sellValues::orange Candle} to 1200
+
+    add Purple Candle to {sellItems::*}
+    set {sellValues::Purple candle} to 1400
+
+    add Pink candle to {sellItems::*}
+    set {sellValues::Pink Candle} to 1600
+
+    add white candle to {sellItems::*}
+    set {sellValues::White Candle} to 2000
+
+
+    # genTypes, genParticleColor, genItemDisplay
+
+
+    add Dead Brain Coral Fan to {genTypes::*}
+    set {genParticleColor::Dead Brain Coral Fan} to "white"
+    set {genItemDisplay::Dead Brain Coral Fan} to "Dead Brain Coral Block"
+
+    add coal to {genTypes::*}
+    set {genParticleColor::coal} to "white"
+    set {genItemDisplay::coal} to "Coal Ore"
+
+    add Black Candle to {genTypes::*}
+    set {genParticleColor::Black Candle} to "white"
+    set {genItemDisplay::Black candle} to "Deepslate Coal Ore"
+
+    add Iron nugget to {genTypes::*}
+    set {genParticleColor::iron nugget} to "white"
+    set {genItemDisplay::iron nugget} to "Iron Ore"
+
+    add Raw Iron to {genTypes::*}
+    set {genParticleColor::Raw Iron} to "white"
+    set {genItemDisplay::Raw Iron} to "Deepslate Iron Ore"
+
+    add Gold Nugget to {genTypes::*}
+    set {genParticleColor::Gold Nugget} to "white"
+    set {genItemDisplay::Gold Nugget} to "Gold Ore"
+
+    add Raw Gold to {genTypes::*}
+    set {genParticleColor:: Raw Gold} to "white"
+    set {genItemDisplay::Raw Gold} to "Deepslate Gold Ore"
+
+    add Emerald to {genTypes::*}
+    set {genParticleColor::Emerald} to "white"
+    set {genItemDisplay::Emerald} to "Emerald Ore"
+
+    add Green Dye to {genTypes::*}
+    set {genParticleColor::Green dye} to "white"
+    set {genItemDisplay::Green Dye} to "Deepslate Emerald Ore"
+
+    add Red dye to {genTypes::*}
+    set {genParticleColor::Red Dye} to "white"
+    set {genItemDisplay::Red Dye} to "Redstone Ore"
+
+    add Red Tulip to {genTypes::*}
+    set {genParticleColor::Red Tulip} to "white"
+    set {genItemDisplay::Red Tulip} to "Deepslate Redstone Ore"
+
+    add Red candle to {genTypes::*}
+    set {genParticleColor::Red candle} to "white"
+    set {genItemDisplay::Red candle} to "Red Glazed Terracotta"
+
+    add Netherite Scraps to {genTypes::*}
+    set {genParticleColor::Netherite Scraps} to "white"
+    set {genItemDisplay::Netherite Scraps} to "Ancient Debris"
+
+    add Nether Brick to {genTypes::*}
+    set {genParticleColor::Nether Brick} to "white"
+    set {genItemDisplay::Nether Brick} to "Block Of Netherite"
+
+    add orange Candle to {genTypes::*}
+    set {genParticleColor::orange candle} to "white"
+    set {genItemDisplay::orange candle} to "Orange Glazed Terracotta"
+
+    add Purple Candle to {genTypes::*}
+    set {genParticleColor::Purple Candle} to "white"
+    set {genItemDisplay::Purple candle} to "Purple Glazed Terracotta"
+
+    add Pink Candle to {genTypes::*}
+    set {genParticleColor::Pink Candle} to "white"
+    set {genItemDisplay::Pink candle} to "Pink Glazed Terracotta"
+
+    add White Candle to {genTypes::*}
+    set {genParticleColor::White Candle} to "white"
+    set {genItemDisplay::White Candle} to "White Glazed Terracotta"
+
+
+
+# Functions
+
+function genSpawnItemDisplay(loc: location, type: string):
+    spawn item display at {_loc}
+    set {_ent} to last spawned item display
+
+    set display item of {_ent} to ({genItemDisplay::%{_type}%} parsed as item type)
+    set display scale of {_ent} to vector(0.5,0.5,0.5)
+
+function genDeleteItemDisplay(loc: location):
+    loop all item displays in radius 0.5 of {_loc}:
+        delete loop-item display
+
+function genSpawnParticles(loc: location, type: string):
+    make 35 of dust using dustOption(({genParticleColor::%{_type}%} parsed as color), 1) at {_loc} with offset vector(0.25, 0.25, 0.25)
+
+# Yaml loading and unloading
+
+on join:
+    load yaml "plugins/playerData/%uuid of player%.yml" as "%player%"
+    yaml path "player.coins" in "%player%" doesn't have value:
+        set yaml value "player.coins" in "%player%" to 0
+        save yaml "%player%"
+
+on leave:
+    unload yaml "%player%"
+
+# Generator cycle
+
+every 5 seconds:
+    loop all players:
+        loop yaml node keys "gens" from "%loop-player%":
+            set {_genKey} to "%loop-key%"
+            set {_parts::*} to {_genKey} split at ","
+            set {_x} to {_parts::1} parsed as an integer
+            set {_y} to {_parts::2} parsed as an integer
+            set {_z} to {_parts::3} parsed as an integer
+            set {_t} to {_Type} parsed as item 
+            set {_type} to yaml value "gens.%{_genKey}%.type" in "%loop-player%"
+            drop 1 of ({_type} parsed as item) named "&a&lɢᴇɴᴇʀᴀᴛᴏʀ ᴅʀᴏᴘ " with lore "" and " &6🔥 &6&lꜱᴇʟʟ ᴡɪᴛʜ /ꜱᴇʟʟ" at location({_x} + 0.5, {_y} + 1.25, {_z} + 0.5, world {genWorld}) without velocity
+            genSpawnParticles(location({_x} + 0.5, {_y} + 0.5, {_z} + 0.5), {_type})
+            set {_pitch} to random number from 0.95 to 1.05
+            play sound "minecraft:block.amethyst_block.resonate" with volume 0.1 with pitch {_pitch} at location({_x} + 0.5, {_y} + 0.5, {_z} + 0.5)
+
+# Generator placing and removing
+
+on place:
+
+    set {_blockType} to event-block's type
+    {genItemDisplay::*} contains "%{_blockType}%"
+
+    cancel the event
+    wait 1 tick
+
+    loop {genItemDisplay::*}:
+        if loop-value is "%{_blockType}%":
+            set {_type} to loop-index
+
+    set block at event-block's location to light gray stained glass
+    genSpawnItemDisplay(event-block's location, {_type})
+    play sound "minecraft:block.amethyst_block.place" with volume 0.5
+    genSpawnParticles(event-block's location, {_type})
+
+    set {_key} to "%(event-block's x-coordinate) - 0.5%,%(event-block's y-coordinate) - 0.5%,%(event-block's z-coordinate) - 0.5%"
+    set yaml value "gens.%{_key}%.type" in "%player%" to "%{_type}%"
+    save yaml "%player%"
+
+on left click on light gray stained glass:
+
+    cancel the event
+
+    set {_key} to "%(event-block's x-coordinate) - 0.5%,%(event-block's y-coordinate) - 0.5%,%(event-block's z-coordinate) - 0.5%"
+    set {_type} to yaml value "gens.%{_key}%.type" in "%player%"
+
+    play sound "minecraft:block.amethyst_block.break" with volume 0.5
+    genSpawnParticles(event-block's location, {_type})
+
+    wait 3 tick
+    set block at event-block to air
+
+    genDeleteItemDisplay(event-block's location)
+
+    delete yaml value "gens.%{_key}%" in "%player%"
+    save yaml "%player%"
+
+# Set world command
+
+command /set-gen-world [<text>]:
+    permission: op
+    trigger:
+        set {genWorld} to arg-1
+
+
+# Sell command
+
+command /bal:
+    trigger:
+        set {_balval} to yaml value "player.coins" in "%player%"
+        send "&9&lɪᴛᴇᴍꜱ ꜱᴏʟᴅ ꜰᴏʀ: &a&l%{_balval}%"
+
+
+command /sell:
+    trigger:
+        loop {sellItems::*}:	
+            set {_item} to loop-value
+            set {_amount} to amount of {_item} in player's inventory
+            if {_amount} > 0:
+                remove {_amount} of {_item} from player's inventory
+
+                set {_key} to "%type of {_item}%"
+                set {_value} to {sellValues::%{_key}%}
+                set {_coins} to yaml value "player.coins" in "%player%"
+                set yaml value "player.coins" in "%player%" to ({_coins} + {_amount}*{_value})
+                save yaml "%player%"
+
+                send "%{_amount}*{_value}% coins for %{_amount}%x %{_item}% sold
