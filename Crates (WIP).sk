@@ -1,0 +1,514 @@
+###################################
+# WORK IN PROGRESS...            #
+###################################
+
+
+
+command /crates [<text>] [<text>] [<text>] [<player>] [<number>]:
+	aliases: /crate
+	trigger:
+		if arg-1 is "create":
+			if executor has permission "system.crates.create":
+				if arg-2 is set:
+					if {crates::*} does not contain arg-2:
+						add arg-2 to {crates::*}
+						set {crates::%arg-2%::type} to "Item Key"
+						send "&bYou successfully created a crate named ""&f%arg-2%&b""!" to executor
+					else:
+						send "&cThere is already an existing crate named ""&f%arg-2%&c""!" to executor
+				else:
+					send "&cYou need to define the name of your new crate." to executor
+		else if arg-1 is "delete":
+			if executor has permission "system.crates.delete":
+				if arg-2 is set:
+					if {crates::*} contains arg-2:
+						delete {crates::%arg-2%::*}
+						remove arg-2 from {crates::*}
+						send "&bYou successfully deleted a crate named ""&f%arg-2%&b""!" to executor
+					else:
+						send "&cThere is no existing crate named ""&f%arg-2%&c""!" to executor
+				else:
+					send "&cYou need to specify which crate you wish to delete." to executor
+		else if arg-1 is "settings":
+			if executor has permission "system.crates.settings":
+				if arg-2 is set:
+					if {crates::*} contains arg-2:
+						crateSettings(player, arg-2)
+					else:
+						send "&cThere is no existing crate named ""&f%arg-2%&c""!" to executor
+				else:
+					send "&cYou need to specify which crate you wish to edit." to executor
+		else if arg-1 is "give":
+			if executor has permission "system.crates.give":
+				if arg-2 is "crate" or "key":
+					if arg-3 is set:
+						if {crates::*} contains arg-3:
+							if arg-4 is a player:
+								if arg-5 is set:
+									add arg-5 of {crates::%arg-3%::keys::1} to arg-4's inventory
+									send "&bYou gave &3%arg-4% &7%arg-5% &bof &e%name of {crates::%arg-3%::keys::1}% &b(%arg-3% crate key(s))" to executor
+							else if arg-4 is "all" or "*":
+							else:
+								send "&cYou need to specify a player (or 'all' to represent all players)!" to executor
+                    
+on tab complete of "/crates" and "/crate":
+	if executor has permission "system.crates":
+		set tab completions for position 1 to "settings" and "create" and "delete" and "give"
+		if tab arg-1 is "settings" or "delete":
+			set tab completions for position 2 to {crates::*}
+		if tab arg-1 is "give":
+			set tab completions for position 2 to "crate" and "key"
+			if tab arg-2 is "crate" or "key":
+				set tab completions for position 3 to {crates::*}
+
+function crateSettings(p: player, id: text):
+	create a gui with virtual chest inventory with 3 rows named "Crate Settings - %{_id}%" and shape "xxxxxxxxx", "x-klrna-x", and "xxxxcxxxx":
+		open gui to {_p}
+		format gui slot "x" with cyan stained glass pane named " "
+		format gui slot "k" with tripwire hook named "&3&lCrate Key" with lore "&8| &bCurrent Key&7: &cNo Key Set" and "&8| &bTotal Linked Keys&7: &f%size of {crates::%{_id}%::keys::*}%" and "&8| &bCrate Type&7: &f%{crates::%{_id}%::type}%" and " " and "&aRight-Click:" and " &f&l➡ &7ᴛᴏɢɢʟᴇ ᴄʀᴀᴛᴇ ᴛʏᴘᴇ" and "&dLeft-Click:" and " &f&l➡ &7ᴍᴀɴᴀɢᴇ ᴄʀᴀᴛᴇ ᴋᴇʏs":
+			if "%click type%" contains "LEFT":
+				crateSettingsKeys({_p}, {_id})
+			else if "%click type%" contains "RIGHT":
+				if {crates::%{_id}%::type} is "Item Key":
+					set {crates::%{_id}%::type} to "Virtual Key"
+				else if {crates::%{_id}%::type} is "Virtual Key":
+					set {crates::%{_id}%::type} to "Place Key"
+				else if {crates::%{_id}%::type} is "Place Key":
+					set {crates::%{_id}%::type} to "Item Key"
+				crateSettings({_p}, {_id})
+		if {crates::%{_id}%::keys::*} is set:
+			format gui slot "k" with {crates::%{_id}%::keys::1} named "&3&lCrate Key" with lore "&8| &bCurrent Key&7: %name of {crates::%{_id}%::keys::1}%" and "&8| &bTotal Linked Keys&7: &f%size of {crates::%{_id}%::keys::*}%" and "&8| &bCrate Type&7: &f%{crates::%{_id}%::type}%" and " " and "&aRight-Click:" and " &f&l➡ &7ᴛᴏɢɢʟᴇ ᴄʀᴀᴛᴇ ᴛʏᴘᴇ" and "&dLeft-Click:" and " &f&l➡ &7ᴍᴀɴᴀɢᴇ ᴄʀᴀᴛᴇ ᴋᴇʏs":
+				if "%click type%" contains "LEFT":
+					crateSettingsKeys({_p}, {_id})
+				else if "%click type%" contains "RIGHT":
+					if {crates::%{_id}%::type} is "Item Key":
+						set {crates::%{_id}%::type} to "Virtual Key"
+					else if {crates::%{_id}%::type} is "Virtual Key":
+						set {crates::%{_id}%::type} to "Place Key"
+					else if {crates::%{_id}%::type} is "Place Key":
+						set {crates::%{_id}%::type} to "Item Key"
+					crateSettings({_p}, {_id})
+                            
+		set {_locs::*} to {crates::%{_id}%::locations::*}
+		set {_format} to {_locs::1}
+		remove {_format} from {_locs::*}
+		set {_locs::*} to sorted {_locs::*}
+		loop {_locs::*}:
+			set {_format} to "%{_format}%%nl%&f%loop-value%"
+		if {_format} is not set:
+			set {_format} to ""
+		format gui slot "l" with grass block named "&2&lCrate Locations" with lore "&8| &bCurrent Locations&7:" and "%{_format}%" and " " and "&aRight-Click:" and " &f&l➡ &7ᴄʟᴇᴀʀ ʟᴏᴄᴀᴛɪᴏɴs" and "&dLeft-Click:" and " &f&l➡ &7ᴀᴅᴅ ʙʟᴏᴄᴋ":
+			if "%click type%" contains "LEFT":
+				send "e" to {_p}
+			else if "%click type%" contains "RIGHT":
+				delete {crates::%{_id}%::locations::*}
+			crateSettings({_p}, {_id})
+		set {_i} to diamond helmet named "&6&lRewards" with lore "&8| &bTotal Rewards&7: &f%size of {crates::%{_id}%::rewards::*}%" and " " and "&dLeft-Click:" and " &f&l➡ &7ᴍᴀɴᴀɢᴇ ᴄʀᴀᴛᴇ ʀᴇᴡᴀʀᴅs"
+		set boolean tag "minecraft:attribute_modifiers;show_in_tooltip" of vanilla nbt of {_i} to false
+		format gui slot "r" with {_i}:
+			if "%click type%" contains "LEFT":
+				crateRewards({_p}, {_id})
+		set {_winam} to 1
+		if {crates::%{_id}%::winamount} is set:
+			set {_winam} to {crates::%{_id}%::winamount}
+		format gui slot "n" with {_winam} of ender eye named "&a&lReward Amount" with lore "&8| &bCurrent Amount&7: &f%{_winam}%" and " " and "&dLeft-Click:" and " &f&l➡ &7ᴄʜᴀɴɢᴇ ᴠᴀʟᴜᴇ":
+			changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+		set {_animation} to "default"
+		if {crates::%{_id}%::animation} is set:
+			set {_animation} to {crates::%{_id}%::animation}
+		format gui slot "a" with nether star named "&d&lCrate Animation" with lore "&8| &bCurrent Animation&7: &f%{_animation}%" and " " and "&dLeft-Click:" and " &f&l➡ &7ᴄʏᴄʟᴇ ᴠᴀʟᴜᴇs":
+		format gui slot "c" with oak door named "&csᴀᴠᴇ & ᴇxɪᴛ":
+			crateOverview({_p})
+                    
+function crateSettingsKeys(p: player, id: text):
+	create a gui with virtual chest inventory with 3 rows named "Crate Keys - %{_id}%" with stealable items:
+		open gui to {_p}
+		set {_slot} to 0
+		loop (size of {crates::%{_id}%::keys::*}) times:
+			format gui slot {_slot} with {crates::%{_id}%::keys::%loop-number%}
+			add 1 to {_slot}
+		run on gui close:
+			delete {crates::%{_id}%::keys::*}
+			loop 27 times:
+				if slot (loop-number - 1) of gui is not air:
+					add slot (loop-number - 1) of gui to {crates::%{_id}%::keys::*}
+
+function crateRewards(p: player, id: text):
+	create a gui with virtual chest inventory with 5 rows named "Crate Rewards - %{_id}%" with stealable items:
+		open gui to {_p}
+		set {_slot} to 0
+		format gui slot (integers between 0 and 8) with gray stained glass pane named " ":
+			cancel event
+		format gui slot 4 with book named "&7Reward Management" with lore "&e Instructions regarding the" and " &emanagement of below rewards:":
+			cancel event
+		loop (size of {crates::%{_id}%::rewards::*}) times:
+			set {_value} to loop-number
+			set {_lore::*} to "&8| &eWeight: &f%{crates::%{_id}%::rewards::%{_value}%::weight}%" and "&8| &bMessages: &f%size of {crates::%{_id}%::rewards::%{_value}%::messages::*}%" and " " and "&aRight-Click:" and " &f&l➡ &7ᴅᴇʟᴇᴛᴇ ʀᴇᴡᴀʀᴅ" and "&dLeft-Click:" and " &f&l➡ &7ᴍᴀɴᴀɢᴇ ʀᴇᴡᴀʀᴅ" and "&6Middle-Click:" and " &f&l➡ &7ɢᴇᴛ ʀᴇᴡᴀʀᴅ"
+			set {_i} to {crates::%{_id}%::rewards::%loop-number%}
+			set lore of {_i} to {_lore::*}
+			format gui slot ({_slot} + 9) with {_i}:
+				if "%click type%" contains "LEFT":
+					crateRewardSettings({_p}, {_id}, {_value})
+				if "%click type%" contains "RIGHT":
+					remove gui slot ({_slot} + 9)
+					delete {crates::%{_id}%::rewards::%{_slot} + 1%}
+					loop {crates::%{_id}%::rewards::*}:
+						if (loop-index parsed as a number) > ({_slot} + 1):
+							if {crates::%{_id}%::rewards::%loop-index%} is set:
+								set {crates::%{_id}%::rewards::%(loop-index parsed as a number) - 1%} to {crates::%{_id}%::rewards::%loop-index%}
+								format gui slot ((loop-index parsed as a number) + 7) with {crates::%{_id}%::rewards::%(loop-index parsed as a number) - 1%}
+								loop {crates::%{_id}%::rewards::%loop-index%::*}:
+									set {crates::%{_id}%::rewards::%(loop-index-1 parsed as a number) - 1%::%loop-index-2%} to loop-value-2
+								delete {crates::%{_id}%::rewards::%loop-index%::*}
+								delete {crates::%{_id}%::rewards::%loop-index%}
+								remove gui slot ((loop-index parsed as a number) + 8)
+					crateRewards({_p}, {_id})
+			add 1 to {_slot}
+		run on gui close:
+			edit last gui:
+				set {_slot} to 0
+				loop (size of {crates::%{_id}%::rewards::*}) times:
+					format gui slot ({_slot} + 9) with {crates::%{_id}%::rewards::%loop-number%}
+					add 1 to {_slot}
+			loop ((size of last gui - 1) * 9) times:
+				if slot (loop-number + 8) of gui is not air:
+					if {crates::%{_id}%::rewards::%loop-number%} is not slot (loop-number-1 + 8) of last gui:
+						add slot (loop-number-1 + 8) of gui to {crates::%{_id}%::rewards::*}
+						set {crates::%{_id}%::rewards::%loop-number%::weight} to 25
+
+function crateRewardSettings(p: player, id: text, reward: number):
+	create a gui with virtual chest inventory with 3 rows named "Crate Reward Settings - %{_id}%" and shape "xxxxixxxx", "x-m-w-c-x", and "xxxxbxxxx":
+		open gui to {_p}
+		format gui slot "x" with light blue stained glass pane named " "
+		set {_i} to {crates::%{_id}%::rewards::%{_reward}%}
+		add " " and "&dLeft-Click:" and " &f&l➡ &7ᴄʜᴀɴɢᴇ ɪᴛᴇᴍ" to lore of {_i}
+		format gui slot "i" with {_i}:
+			cancel event
+		format gui slot "m" with name tag named "&eMessages" with lore "&8| &bCurrent Messages&7:" and " " and " " and "&aRight-Click:" and " &f&l➡ &7ᴄʟᴇᴀʀ ᴍᴇssᴀɢᴇs" and "&dLeft-Click:" and " &f&l➡ &7ᴀᴅᴅ ᴍᴇssᴀɢᴇs"
+		format gui slot "w" with paper named "&6Weight &7&o(likelihood of winning this item)" with lore "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_reward}%::weight}%" and " " and "&dLeft-Click:" and " &f&l➡ &7ᴄʜᴀɴɢᴇ ᴡᴇɪɢʜᴛ":
+			changeRewardValueGUI({_p}, {_id}, {_reward}, "Weight")
+		format gui slot "c" with command block named "&cCommands" with lore "&8| &bCurrent Commands&7:" and " " and " " and "&aRight-Click:" and " &f&l➡ &7ᴄʟᴇᴀʀ ᴄᴏᴍᴍᴀɴᴅs" and "&dLeft-Click:" and " &f&l➡ &7ᴀᴅᴅ ᴄᴏᴍᴍᴀɴᴅ"
+		format gui slot "b" with oak door named "&csᴀᴠᴇ & ᴇxɪᴛ":
+			crateRewards({_p}, {_id})
+                
+function changeRewardValueGUI(p: player, id: text, rn: number, type: text):
+	create a gui with virtual chest inventory with 3 rows named "Change Reward %{_type}% - %{_id}%" and shape "xxxxvxxxx", "x123x456x", and "xxxxbxxxx":
+		open gui to {_p}
+		format gui slot "x" with white stained glass pane named " "
+		if {_type} is "Weight":
+			format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "1" with red concrete named "&c-10":
+				set {_change} to uncolored name of slot 10 of gui
+				add ({_change} parsed as a number) to {crates::%{_id}%::rewards::%{_rn}%::weight}
+				edit last gui:
+					format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "2" with red dye named "&c-5":
+				set {_change} to uncolored name of slot 11 of gui
+				add ({_change} parsed as a number) to {crates::%{_id}%::rewards::%{_rn}%::weight}
+				edit last gui:
+					format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "3" with red dye named "&c-1":
+				set {_change} to uncolored name of slot 12 of gui
+				add ({_change} parsed as a number) to {crates::%{_id}%::rewards::%{_rn}%::weight}
+				edit last gui:
+					format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "6" with lime concrete named "&a+10":
+				set {_change::*} to uncolored name of slot 16 of gui split at "+"
+				add ({_change::%size of {_change::*}%} parsed as a number) to {crates::%{_id}%::rewards::%{_rn}%::weight}
+				edit last gui:
+					format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "5" with lime stained glass named "&a+5":
+				set {_change::*} to uncolored name of slot 15 of gui split at "+"
+				add ({_change::%size of {_change::*}%} parsed as a number) to {crates::%{_id}%::rewards::%{_rn}%::weight}
+				edit last gui:
+					format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "4" with lime dye named "&a+1":
+				set {_change::*} to uncolored name of slot 14 of gui split at "+"
+				add ({_change::%size of {_change::*}%} parsed as a number) to {crates::%{_id}%::rewards::%{_rn}%::weight}
+				edit last gui:
+					format gui slot "v" with paper named "                    &6Weight" with lore "&8| &eDefines the chance of getting this item." and "&8| &eA higher weight increases the likelihood" and "&8| &eof winning this item." and " " and "&8| &bCurrent Weight&7: &f%{crates::%{_id}%::rewards::%{_rn}%::weight}%"
+			format gui slot "b" with oak door named "&csᴀᴠᴇ & ᴇxɪᴛ":
+				crateRewardSettings({_p}, {_id}, {_rn})
+                    
+		else if {_type} is "Amount":
+			set {_winam} to 1
+			if {crates::%{_id}%::winamount} is set:
+				set {_winam} to {crates::%{_id}%::winamount}
+				if {crates::%{_id}%::winamount} is 1:
+					delete {crates::%{_id}%::winamount}
+			format gui slot "v" with paper named "          &aReward Quantity" with lore "&eDefines the number of rewards" and "&ewon when crate is opened." and " " and "&8| &bCurrent Value&7: &f%{_winam}%"
+			format gui slot "1" with red concrete named "&c-10":
+				set {_change} to uncolored name of slot 10 of gui
+				add ({_change} parsed as a number) to {crates::%{_id}%::winamount}
+				changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+			format gui slot "2" with red dye named "&c-5":
+				set {_change} to uncolored name of slot 11 of gui
+				add ({_change} parsed as a number) to {crates::%{_id}%::winamount}
+				changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+			format gui slot "3" with red dye named "&c-1":
+				set {_change} to uncolored name of slot 12 of gui
+				add ({_change} parsed as a number) to {crates::%{_id}%::winamount}
+				changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+			format gui slot "6" with lime concrete named "&a+10":
+				set {_change::*} to uncolored name of slot 16 of gui split at "+"
+				add ({_change::%size of {_change::*}%} parsed as a number) to {crates::%{_id}%::winamount}
+				changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+			format gui slot "5" with lime stained glass named "&a+5":
+				set {_change::*} to uncolored name of slot 15 of gui split at "+"
+				add ({_change::%size of {_change::*}%} parsed as a number) to {crates::%{_id}%::winamount}
+				changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+			format gui slot "4" with lime dye named "&a+1":
+				set {_change::*} to uncolored name of slot 14 of gui split at "+"
+				add ({_change::%size of {_change::*}%} parsed as a number) to {crates::%{_id}%::winamount}
+				changeRewardValueGUI({_p}, {_id}, 1, "Amount")
+			format gui slot "b" with oak door named "&csᴀᴠᴇ & ᴇxɪᴛ":
+				crateSettings({_p}, {_id})
+                    
+on right-click:
+	loop {crates::*}:
+		if {crates::%loop-value%::locations::*} contains player's target:
+			cancel event
+			set {_animation} to "default"
+			set {_animation} to {crates::%loop-value%::animation} if {crates::%loop-value%::animation} is set
+			set {_winamount} to 1
+			set {_winamount} to {crates::%loop-value%::winamount} if {crates::%loop-value%::winamount} is set
+			if {crates::%loop-value%::type} is "Virtual Key":
+				if {crates::%loop-value%::virtualkeys::%player's uuid%} >= 1:
+					remove 1 from {crates::%loop-value%::virtualkeys::%player's uuid%}
+					crateOpen(player, loop-value, {_winamount}, {_animation})
+				else:
+					send "&cYou do not have a key to that crate!" to player
+			else if {crates::%loop-value%::type} is "Item Key":
+				if {crates::%loop-value%::keys::*} contains 1 of player's tool:
+					remove 1 of player's tool from player's inventory
+					crateOpen(player, loop-value, {_winamount}, {_animation})
+				else:
+					send "&cYou do not have a key to that crate!" to player
+		else:
+			if {crates::%loop-value%::type} is "Place Key":
+				if {crates::%loop-value%::keys::*} contains 1 of player's tool:
+					cancel event
+					set {_animation} to "default"
+					set {_animation} to {crates::%loop-value%::animation} if {crates::%loop-value%::animation} is set
+					set {_winamount} to 1
+					set {_winamount} to {crates::%loop-value%::winamount} if {crates::%loop-value%::winamount} is set
+					remove 1 of player's tool from player's inventory
+					crateOpen(player, loop-value, {_winamount}, {_animation})
+                    
+command /forcecrateopen [<text>] [<number>]:
+	trigger:
+		crateOpen(player, arg-1, arg-2, "default")
+            
+function crateOpen(p: player, id: text, rewardnum: number, animation: text):
+	if {_animation} is "default":
+		if {_rewardnum} is 2:
+			create a gui with id "%{_p}% - Crate Opening" with virtual chest inventory with 3 rows named "Crate Opening":
+				open gui to {_p}
+				format gui slot (integers between 0 and 8) with cyan stained glass pane named " "
+				format gui slot (integers between 18 and 27) with cyan stained glass pane named " "
+				format gui slot 9 and 13 and 17 with cyan stained glass pane named " "
+				format gui slot 2 and 6 and 20 and 24 with iron bars named "&7ʏᴏᴜ ᴡɪɴ ᴛʜɪs ɪᴛᴇᴍ"
+				format gui slot 10 and 12 and 14 and 16 with gray dye named " "
+				loop {crates::%{_id}%::rewards::*}:
+					add {crates::%{_id}%::rewards::%loop-index%::weight} to {_chances::*}
+				set {_i} to ender chest
+				set name of {_i} to "&d&lᴄʟɪᴄᴋ ᴛᴏ ʀᴏʟʟ"
+				format gui slot 11 with {_i}:
+					set {_slotrolls::*} to 10 and 11 and 12
+					multiRewardCrateOpem({_p}, {_id}, {_rewardnum}, {_animation}, {_slotrolls::*}, 11)
+				format gui slot 15 with {_i}:
+					set {_slotrolls::*} to 14 and 15 and 16
+					multiRewardCrateOpem({_p}, {_id}, {_rewardnum}, {_animation}, {_slotrolls::*}, 15)
+				run on gui close:
+					cancel gui close
+		if {_rewardnum} is 1:
+			create a gui with virtual chest inventory with 3 rows named "Crate Opening":
+				open gui to {_p}
+				format gui slot (integers between 0 and 8) with cyan stained glass pane named " "
+				format gui slot (integers between 18 and 27) with cyan stained glass pane named " "
+				format gui slot 9 and 17 with cyan stained glass pane named " "
+				format gui slot 4 and 22 with 1 iron bars named "&7ʏᴏᴜ ᴡɪɴ ᴛʜɪs ɪᴛᴇᴍ"
+				loop {crates::%{_id}%::rewards::*}:
+					add {crates::%{_id}%::rewards::%loop-index%::weight} to {_chances::*}
+				set {_time} to 0
+				run on gui close:
+					if metadata value "crateStatus" of {_p} is not set:
+						set {_reward} to get_weighted_random_element({crates::%{_id}%::rewards::*}, {_chances::*})
+						add {_reward} to {_p}'s inventory
+						set {_item} to (type of {_reward})
+						set {_item} to (name of {_reward}) if name of {_reward} is set
+						set {_am} to item amount of {_reward}
+						send " " to {_p}
+						send "&bYou won &7x%{_am}% &3%{_item}% &bfrom a crate. &d&oCongratulations!" to {_p}
+						send " " to {_p}
+					else:
+						delete metadata value "crateStatus" of {_p}
+				loop (random integer between 60 and 70) times:
+					if {_p} has a gui open:
+						set {_sel} to size of {crates::%{_id}%::rewards::*}
+						loop {_sel} times:
+							set {_sel2} to {_sel} - 1
+							set {_item::%{_sel}%} to {_item::%{_sel2}%}
+							subtract 1 from {_sel}
+						set {_item::1} to get_weighted_random_element({crates::%{_id}%::rewards::*}, {_chances::*})
+						loop integers between 0 and 26:
+							loop 7 times:
+								format gui slot 9 + loop-number-3 with {_item::%loop-number-3%}
+						play sound "block.note_block.pling" with volume 10 and pitch 3 to {_p}
+						if {_time} < 35:
+							add 1 to {_time}
+							wait 2 ticks
+						else if {_time} < 40:
+							add 1 to {_time}
+							wait 4 ticks
+						else if {_time} < 45:
+							add 1 to {_time}
+							wait 6 ticks
+						else if {_time} < 50:
+							add 1 to {_time}
+							wait 8 ticks
+						else if {_time} < 55:
+							add 1 to {_time}
+							wait 10 ticks
+						else if {_time} < 60:
+							add 1 to {_time}
+							wait 13 ticks
+						else:
+							add 1 to {_time}
+							wait 15 ticks
+					else:
+						stop loop
+				if {_p} has a gui open:
+					set metadata value "crateStatus" of {_p} to "True"
+					set {_reward} to slot 13 of gui
+					add {_reward} to {_p}'s inventory
+					set {_item} to (type of {_reward})
+					set {_item} to (name of {_reward}) if name of {_reward} is set
+					set {_am} to item amount of {_reward}
+					send " " to {_p}
+					send "&bYou won &7x%{_am}% &3%{_item}% &bfrom a crate. &d&oCongratulations!" to {_p}
+					send " " to {_p}
+					enchant {_reward} with mending
+					format gui slot 13 with {_reward} with item flag hide enchants
+					wait 3 seconds
+					if {_p} has a gui open:
+						close {_p}'s inventory
+					delete metadata value "crateStatus" of {_p}
+                                   
+command /trynametag:
+	trigger:
+		give player ender eye
+                                   
+on join:
+	delete {crate::opened::%player%}
+	delete metadata value "crateStatus" of player
+	delete gui with id "%{_p}% - Crate Opening"
+	
+on quit:
+	delete {crate::opened::%player%}
+	delete metadata value "crateStatus" of player
+	delete gui with id "%{_p}% - Crate Opening"
+                                   
+function multiRewardCrateOpem(p: player, id: text, rewardnum: number, animation: text, slots: objects, rewardslot: number):
+	edit gui with id "%{_p}% - Crate Opening":
+		loop {_slots::*}:
+			format gui slot loop-value with air
+		run on gui close:
+			if {crate::opened::%{_p}%} < {_rewardnum}:
+				cancel gui close
+		set {_slots::*} to reversed (sorted {_slots::*})
+		loop {crates::%{_id}%::rewards::*}:
+			add {crates::%{_id}%::rewards::%loop-index%::weight} to {_chances::*}
+		loop (random integer between 60 and 70) times:
+			if {_p} has a gui open:
+				set {_sel} to size of {crates::%{_id}%::rewards::*}
+				loop {_sel} times:
+					set {_sel2} to {_sel} - 1
+					set {_item::%{_sel}%} to {_item::%{_sel2}%}
+					subtract 1 from {_sel}
+				set {_item::1} to get_weighted_random_element({crates::%{_id}%::rewards::*}, {_chances::*})
+				loop integers between 0 and 26:
+					loop (size of {_slots::*}) times:
+						format gui slot {_slots::%loop-number-3%} with {_item::%loop-number-3%}
+				play sound "block.note_block.pling" with volume 10 and pitch 3 to {_p}
+				if {_time} < 35:
+					add 1 to {_time}
+					wait 2 ticks
+				else if {_time} < 40:
+					add 1 to {_time}
+					wait 4 ticks
+				else if {_time} < 45:
+					add 1 to {_time}
+					wait 6 ticks
+				else if {_time} < 50:
+					add 1 to {_time}
+					wait 8 ticks
+				else if {_time} < 55:
+					add 1 to {_time}
+					wait 10 ticks
+				else if {_time} < 60:
+					add 1 to {_time}
+					wait 13 ticks
+				else:
+					add 1 to {_time}
+					wait 15 ticks
+			else:
+				stop loop
+		if {_p} has a gui open:
+			add 1 to {crate::opened::%{_p}%}
+			set {_reward} to slot {_rewardslot} of gui
+			add {_reward} to {_p}'s inventory
+			set {_item} to (type of {_reward})
+			set {_item} to (name of {_reward}) if name of {_reward} is set
+			set {_am} to item amount of {_reward}
+			send " " to {_p}
+			send "&bYou won &7x%{_am}% &3%{_item}% &bfrom a crate. &d&oCongratulations!" to {_p}
+			send " " to {_p}
+			enchant {_reward} with mending
+			format gui slot {_rewardslot} with {_reward} with item flag hide enchants
+			if {crate::opened::%{_p}%} = {_rewardnum}:
+				delete {crate::opened::%{_p}%}
+				delete gui with id "%{_p}% - Crate Opening"
+				close {_p}'s inventory
+                              
+command /colorparse <text>:
+	permission: staff.colorparse
+	trigger:
+		send colored arg-1 to executor
+                        
+function cratePreview(p: player, id: text):
+	create a gui with virtual chest inventory with 5 rows named "%{_id}% Crate Preview":
+		open gui to {_p}
+		format gui slot (integers between 0 and 9) with magenta stained glass pane named " "
+		format gui slot 17 and 18 and 26 and 27 with magenta stained glass pane named " "
+		format gui slot (integers between 35 and 45) with magenta stained glass pane named " "
+            
+command /testchnce [<number>]:
+	trigger:
+		loop arg-1 times:
+			set {_list::*} to "item1" and "item2" and "item3" and "item4" and "item5"
+			set {_chance::*} to 1 and 10 and 25 and 40 and 75
+			broadcast get_weighted_random_element({_list::*}, {_chance::*})
+
+            
+function get_weighted_random_element(elements: objects, weights: numbers) :: object:
+    set {_random} to random number from 0 to sum({_weights::*})
+    loop {_weights::*}:
+        return {_elements::%loop-index%} if {_random} < loop-value
+        remove loop-value from {_random}
+            
+on inventory click:
+	if name of event-inventory contains "Crate Rewards":
+		if "%click type%" does not contain "RIGHT":
+			wait 1 ticks
+			set {_name::*} to name of event-inventory split at " "
+			if inventory action is shift move:
+				if event-inventory is player's inventory:
+					crateRewards(player, {_name::%size of {_name::*}%})
+			else:
+				if event-inventory is not player's inventory:
+					crateRewards(player, {_name::%size of {_name::*}%})
+
+command /deletec:
+	trigger:
+		delete {crates::test::rewards::*}
