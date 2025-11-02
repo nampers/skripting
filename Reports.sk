@@ -1,0 +1,255 @@
+
+options:
+    prefix: &8[&c&lREPORT&8]&r
+    webhook: "YOUR DISCORD WEBHOOK FOR REPORTS CHANNEL :D"
+    cooldown: 30 # seconds
+    max-reports-per-day: 5
+
+# ============================================
+# DATA TRACKING EVENTS
+# ============================================
+
+on death:
+    attacker is a player
+    victim is a player
+    # Track kills with timestamps
+    set {_kills::*} to {kills::%attacker's uuid%::*}
+    add "%victim's name% [%now%]" to {_kills::*}
+    set {kills::%attacker's uuid%::*} to last 5 elements of {_kills::*}
+    set {ping::%attacker's uuid%} to ping of attacker
+    # Track deaths for victim
+    add 1 to {deaths::%victim's uuid%}
+
+on chat:
+    # Filter out commands from chat tracking
+    if message doesn't start with "/":
+        set {_msgs::*} to {chat::%player's uuid%::*}
+        add "[%now%] %message%" to {_msgs::*}
+        set {chat::%player's uuid%::*} to last 10 elements of {_msgs::*}
+    set {ping::%player's uuid%} to ping of player
+    set {lastseen::%player's uuid%} to now
+
+on join:
+    set {lastseen::%player's uuid%} to now
+    add 1 to {logins::%player's uuid%}
+
+on quit:
+    set {lastseen::%player's uuid%} to now
+
+on command:
+    set {lastcommand::%player's uuid%} to command
+
+# Track suspicious behavior
+on damage:
+    attacker is a player
+    victim is a player
+    set {_cps} to {cps::%attacker's uuid%} ? 0
+    add 1 to {_cps}
+    set {cps::%attacker's uuid%} to {_cps}
+    wait 1 second
+    remove 1 from {cps::%attacker's uuid%}
+
+# ============================================
+# REPORT COMMAND
+# ============================================
+
+command /report <offline player> <text>:
+    permission: command.report
+    permission message: &cYou cannot do this right now!
+    trigger:
+        # Validate arguments
+        if arg-1 is not set:
+            send "{@prefix} &cUsage: /report <player> <reason>" to player
+            stop
+        
+        if arg-2 is not set:
+            send "{@prefix} &cPlease provide a reason for the report!" to player
+            stop
+        
+        set {_reported} to arg-1
+        set {_reason} to arg-2
+        
+        # Prevent self-reporting
+        if {_reported} is player:
+            send "{@prefix} &cYou cannot report yourself!" to player
+            stop
+        
+        # Check cooldown
+        if {report.cooldown::%player's uuid%} is set:
+            set {_remaining} to difference between {report.cooldown::%player's uuid%} and now
+            if {_remaining} is less than {@cooldown} seconds:
+                set {_wait} to {@cooldown} - {_remaining} in seconds
+                send "{@prefix} &cPlease wait %{_wait}% seconds before reporting again!" to player
+                stop
+        
+        # Check daily limit
+        if {report.count::%player's uuid%::%now in format "YYYY-MM-dd"%} is greater than or equal to {@max-reports-per-day}:
+            send "{@prefix} &cYou have reached the maximum number of reports for today!" to player
+            stop
+        
+        # Check for duplicate reports
+        if {report.recent::%player's uuid%::%{_reported}%} is set:
+            set {_lastReport} to difference between {report.recent::%player's uuid%::%{_reported}%} and now
+            if {_lastReport} is less than 5 minutes:
+                send "{@prefix} &cYou recently reported this player! Please wait before reporting them again." to player
+                stop
+        
+        # Update cooldowns and counters
+        set {report.cooldown::%player's uuid%} to now
+        add 1 to {report.count::%player's uuid%::%now in format "YYYY-MM-dd"%}
+        set {report.recent::%player's uuid%::%{_reported}%} to now
+        
+        # Generate unique report ID
+        add 1 to {report.id}
+        set {_reportID} to {report.id}
+        
+        # Confirmation message to reporter
+        send "" to player
+        send "{@prefix} &a&lREPORT SUBMITTED" to player
+        send "&8├─ &fReport ID: &e#%{_reportID}%" to player
+        send "&8├─ &fReported Player: &c%{_reported}%" to player
+        send "&8├─ &fReason: &e%{_reason}%" to player
+        send "&8└─ &aOur staff team will review this shortly!" to player
+        send "" to player
+        
+        # Get reporter location
+        set {_reporterLoc} to "%player's world% (%player's x%, %player's y%, %player's z%)"
+        
+        # Gather reported player data
+        set {_kills::*} to {kills::%uuid of {_reported}%::*}
+        set {_messages::*} to {chat::%uuid of {_reported}%::*}
+        set {_ping} to {ping::%uuid of {_reported}%} ? "N/A"
+        set {_cps} to {cps::%uuid of {_reported}%} ? 0
+        set {_deaths} to {deaths::%uuid of {_reported}%} ? 0
+        set {_logins} to {logins::%uuid of {_reported}%} ? 0
+        set {_lastseen} to {lastseen::%uuid of {_reported}%} ? "Never"
+        set {_lastcmd} to {lastcommand::%uuid of {_reported}%} ? "None"
+        
+        # Calculate K/D ratio
+        if {_deaths} is greater than 0:
+            set {_kd} to size of {_kills::*} / {_deaths}
+            set {_kdText} to "%.2f" formatted {_kd}
+        else:
+            set {_kdText} to "%size of {_kills::*}%"
+        
+        # Check if player is online
+        if {_reported} is online:
+            set {_status} to "🟢 Online"
+            set {_reportedLoc} to "%{_reported}'s world% (%{_reported}'s x%, %{_reported}'s y%, %{_reported}'s z%)"
+            set {_gamemode} to gamemode of {_reported}
+            set {_health} to "%{_reported}'s health%/20"
+        else:
+            set {_status} to "🔴 Offline"
+            set {_reportedLoc} to "Player is offline"
+            set {_gamemode} to "N/A"
+            set {_health} to "N/A"
+        
+        # Format data for embed
+        if {_kills::*} is set:
+            set {_killsText} to join {_kills::*} with "%nl%"
+        else:
+            set {_killsText} to "No recent kills"
+        
+        if {_messages::*} is set:
+            set {_messagesText} to join {_messages::*} with "%nl%"
+        else:
+            set {_messagesText} to "No recent messages"
+        
+        # Create embed fields
+        set {_field1} to new inlined field with name "📊 Player Status" and value "Status: %{_status}%%nl%Ping: %{_ping}%ms%nl%CPS: %{_cps}%"
+        set {_field2} to new inlined field with name "⚔️ Combat Stats" and value "K/D Ratio: %{_kdText}%<nl>Kills: %size of {_kills::*}%%nl%Deaths: %{_deaths}%"
+        set {_field3} to new inlined field with name "🎮 Game Info" and value "Gamemode: %{_gamemode}%<nl>Health: %{_health}%%nl%Logins: %{_logins}%"
+        set {_field4} to new field with name "💬 Recent Messages (Last 10)" and value "```%{_messagesText}%```"
+        set {_field5} to new field with name "🗡️ Recent Kills (Last 5)" and value "```%{_killsText}%```"
+        set {_field6} to new field with name "📍 Locations" and value "Reporter: %{_reporterLoc}%%nl%Reported: %{_reportedLoc}%"
+        set {_field7} to new inlined field with name "🕐 Last Seen" and value "%{_lastseen}%"
+        set {_field8} to new inlined field with name "⌨️ Last Command" and value "%{_lastcmd}%"
+        
+        # Alert online staff
+        set {_staffCount} to 0
+        loop all players:
+            if loop-player has permission "staff.reports":
+                add 1 to {_staffCount}
+                send "" to loop-player
+                send "<#D60000>&l⚠ NEW REPORT #%{_reportID}%" to loop-player
+                send "&8├─ &fReporter: <#5EBEFF>%player%" to loop-player
+                send "&8├─ &fReported: <#FF2121>%{_reported}%" to loop-player
+                send "&8├─ &fReason: <#FF6D0A>%{_reason}%" to loop-player
+                send "&8├─ &fStatus: %{_status}%" to loop-player
+                send "&8└─ &fPing: &e%{_ping}%ms &8| &fCPS: &e%{_cps}% &8| &fK/D: &e%{_kdText}%" to loop-player
+                send "" to loop-player
+                # Clickable teleport and actions
+                if {_reported} is online:
+                    send "&e[TELEPORT] &a[SPECTATE] &c[BAN] &6[KICK]" to loop-player
+        
+        # Log to console
+        log "[REPORT #%{_reportID}%] %player% reported %{_reported}% for: %{_reason}%" to console
+        
+        # Create Discord embed
+        create a new embed:
+            title: "🚨 Player Report #%{_reportID}% | SoulDuel"
+            description: "**Reporter:** %player%%nl%**Reported:** %{_reported}%%nl%**Reason:** `%{_reason}%`"
+            color: "#E20000"
+            timestamp: true
+            footer: "Original System by ISekai | Enhanced v2.0"
+            fields: {_field1}, {_field2}, {_field3}, {_field4}, {_field5}, {_field6}, {_field7}, {_field8}
+            saveInto: {_embed}
+        
+        create a new webhook message:
+            webhook: {@webhook}
+            username: "SoulDuel Reports"
+            avatar: "https://devisestore.com/wp-content/uploads/2023/07/GAM128.png"
+            embed: {_embed}
+
+# ============================================
+# STAFF COMMANDS
+# ============================================
+
+command /reports [<text>]:
+    permission: staff.reports
+    permission message: &cYou don't have permission to use this!
+    trigger:
+        if arg-1 is "stats":
+            send "" to player
+            send "{@prefix} &e&lREPORT STATISTICS" to player
+            send "&8├─ &fTotal Reports: &a%{report.id} ? 0%" to player
+            send "&8├─ &fReports Today: &e%{report.count::%player's uuid%::%now in format "YYYY-MM-dd"%} ? 0%" to player
+            send "&8└─ &fStaff Online: &b%size of (all players where [input has permission ""staff.reports""])%" to player
+            send "" to player
+        else:
+            send "" to player
+            send "{@prefix} &e&lSTAFF REPORT COMMANDS" to player
+            send "&8├─ &f/reports stats &8- &7View report statistics" to player
+            send "&8├─ &f/reporthistory <player> &8- &7View player's report history" to player
+            send "&8└─ &f/clearreports <player> &8- &7Clear player's report cooldowns" to player
+            send "" to player
+
+command /reporthistory <offline player>:
+    permission: staff.reports
+    permission message: &cYou don't have permission to use this!
+    trigger:
+        if arg-1 is not set:
+            send "{@prefix} &cUsage: /reporthistory <player>" to player
+            stop
+        send "{@prefix} &eReport history feature coming soon!" to player
+
+command /clearreports <offline player>:
+    permission: staff.admin
+    permission message: &cYou don't have permission to use this!
+    trigger:
+        if arg-1 is not set:
+            send "{@prefix} &cUsage: /clearreports <player>" to player
+            stop
+        delete {report.cooldown::%uuid of arg-1%}
+        delete {report.count::%uuid of arg-1%::*}
+        delete {report.recent::%uuid of arg-1%::*}
+        send "{@prefix} &aCleared all report cooldowns for %arg-1%!" to player
+
+# ============================================
+# AUTOMATIC CLEANUP (Runs every hour)
+# ============================================
+
+every hour:
+    loop {report.count::*}:
+        if loop-index doesn't contain "%now in format "YYYY-MM-dd"%":
+            delete {report.count::%loop-index%}
