@@ -1,0 +1,98 @@
+
+
+options:
+	prefix: &6[NickSystem]
+	nopermissions: &fUnknown command. Type ""/help"" for help.
+	nickpermission: nicksystem.nick
+	addnickpermission: nicksystem.addnick
+	removenickpermission: nicksystem.removenick
+	realnamepermission: nicksystem.realname
+	
+
+	
+command /nick:
+	trigger:
+		if player has permission "{@nickpermission}":
+			if {nicksystem.%player's uuid%.isnicked} is set:
+				if {nicksystem.%player's uuid%.isnicked} is true:
+					set {_nickname} to player's name
+					set player's display name to "%{_nickname}%"
+					set player's tablist name to "%{_nickname}%"
+					make console execute command "/undisguiseplayer %player%"
+					set {nicksystem.%player's uuid%.isnicked} to false
+					set {nicksystem.%player's uuid%.nickname} to none
+
+					message "{@prefix} &aYou are now longer nicked."
+				else:
+					set {_nickname} to a random element out of {nicksystem.nicks::*}
+					set player's display name to "%{_nickname}%"
+					set player's tablist name to "%{_nickname}%"
+					make console execute command "/disguiseplayer %player% player %{_nickname}%"
+					set {nicksystem.%player's uuid%.isnicked} to true
+					set {nicksystem.%player's uuid%.nickname} to {_nickname}
+
+					message "{@prefix} &aYou are now nicked as: %{_nickname}%."
+			else:
+				set {_nickname} to a random element out of {nicksystem.nicks::*}
+				set player's display name to "%{_nickname}%"
+				set player's tablist name to "%{_nickname}%"
+				make console execute command "/disguiseplayer %player% player %{_nickname}%"
+				set {nicksystem.%player's uuid%.isnicked} to true
+				set {nicksystem.%player's uuid%.nickname} to {_nickname}
+
+				message "{@prefix} &aYou are now nicked as: %{_nickname}%."
+		else:
+			message "{@nopermissions}"
+			
+command /addnick [<Text>] [<Text>]:
+	trigger:
+		if player has permission "{@addnickpermission}":
+			if argument-1 is set:
+				if argument-2 is not set:
+					if {nicksystem.nicks::*} contains argument-1:
+						message "{@prefix} &cThe nickname ""%argument-1%"" already exists."
+					else:
+						add argument-1 to {nicksystem.nicks::*}
+						message "{@prefix} &aThe nickname ""%argument-1%"" was added."
+				else:
+					message "{@prefix} &cUsage: &e/addnick <Name>"
+			else:
+				message "{@prefix} &cUsage: &e/addnick <Name>"
+		else:
+			message "{@nopermissions}"
+			
+command /realname [<Text>] [<Text>]:
+	trigger:
+		if player has permission "{@realnamepermission}":
+			if argument-1 is set:
+				if argument-2 is not set:
+					loop all players:
+						if {nicksystem.%loop-player's uuid%.nickname} is set:
+							if {nicksystem.%loop-player's uuid%.nickname} is argument-1:
+								message "{@prefix} &aThe realname of ""%argument-1%"" is %loop-player's name%."
+				else:
+					message "{@prefix} &cUsage: &e/realname <Player>"
+			else:
+				message "{@prefix} &cUsage: &e/realname <Player>"
+		else:
+			message "{@nopermissions}"
+			
+command /removenick [<Text>] [<Text>]:
+	trigger:
+		if player has permission "{@removenickpermission}":
+			if argument-1 is set:
+				if argument-2 is not set:
+					if {nicksystem.nicks::*} contains argument-1:
+						remove argument-1 from {nicksystem.nicks::*}
+						message "{@prefix} &aThe nickname ""%argument-1%"" was removed."
+					else:
+						message "{@prefix} &cThe nickname ""%argument-1%"" does not exist."
+				else:
+					message "{@prefix} &cUsage: &e/removenick <Name>"
+			else:
+				message "{@prefix} &cUsage: &e/removenick <Name>"
+		else:
+			message "{@nopermissions}"
+			
+
+		
